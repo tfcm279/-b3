@@ -1612,63 +1612,78 @@ function Icons:Create(parent, name, size, color)
 end
 
 
-local IMG_URL = "https://raw.githubusercontent.com/tfcm279/-b3/main/%E7%BB%84%20(4).png"
+local ICON_URL = "https://raw.githubusercontent.com/tfcm279/-b3/main/%E7%BB%84%20(3).png"
+local ICON_PATH = "YAGUI/assets/collapse_icon.png"
+local ICON_ID = nil
 
-local ok, pngBytes = pcall(function()
-    return HttpService:GetAsync(IMG_URL)
-end)
-if not ok then
-    warn("[YAGUI] 图片下载失败，检查 HttpEnabled 和 raw 链接")
-    pngBytes = nil
+local function loadIconAsset()
+    if type(writefile) ~= "function" or type(getcustomasset) ~= "function" then
+        warn("[YAGUI] 当前环境不支持 writefile/getcustomasset，无法加载 GitHub 图片")
+        return nil
+    end
+    if isfile and isfile(ICON_PATH) then
+        local ok, asset = pcall(getcustomasset, ICON_PATH)
+        if ok and asset then return asset end
+    end
+    local okHttp, body = pcall(function()
+        return game:HttpGet(ICON_URL, true)
+    end)
+    if not okHttp or type(body) ~= "string" or #body == 0 then
+        warn("[YAGUI] 下载图标失败")
+        return nil
+    end
+    local okWrite = pcall(function()
+        if makefolder and not (isfolder and isfolder("YAGUI/assets")) then
+            makefolder("YAGUI"); makefolder("YAGUI/assets")
+        end
+        writefile(ICON_PATH, body)
+    end)
+    if not okWrite then
+        warn("[YAGUI] 写入图标失败")
+        return nil
+    end
+    local okAsset, asset = pcall(getcustomasset, ICON_PATH)
+    return okAsset and asset or nil
 end
 
-local btnPart = Instance.new("Part")
-btnPart.Size = Vector3.new(0.6, 0.6, 0.05)
-btnPart.Anchored = true
-btnPart.CanCollide = false
-btnPart.Transparency = 1
-btnPart.Parent = workspace
+ICON_ID = loadIconAsset()
 
-local decal = Instance.new("Decal")
-decal.Face = Enum.NormalId.Front
-decal.Texture = IMG_URL
-decal.Parent = btnPart
+local floatBtn = make("TextButton", {
+    Name = "CollapseFloat",
+    Size = UDim2.fromOffset(40, 40),
+    Position = UDim2.new(0, 12, 0.5, -20),
+    BackgroundTransparency = 1,
+    Text = "",
+    AutoButtonColor = false,
+    ZIndex = 50,
+    Parent = gui,
+})
+local floatIcon = make("ImageLabel", {
+    Name = "Icon",
+    Size = UDim2.fromScale(1, 1),
+    BackgroundTransparency = 1,
+    Image = ICON_ID or "",
+    ImageColor3 = currentPalette().Accent,
+    ScaleType = Enum.ScaleType.Fit,
+}, floatBtn)
 
-local surfaceGui = Instance.new("SurfaceGui")
-surfaceGui.Face = Enum.NormalId.Front
-surfaceGui.AlwaysOnTop = true
-surfaceGui.Parent = btnPart
+bind(Window, floatIcon, "ImageColor3", "Accent")
 
-local imgBtn = Instance.new("ImageButton")
-imgBtn.Size = UDim2.new(1, 0, 1, 0)
-imgBtn.BackgroundTransparency = 1
-imgBtn.Image = ""
-imgBtn.Parent = surfaceGui
+Window:_track(RunService.RenderStepped:Connect(function()
+    if Window._destroyed then return end
+    floatBtn.Position = UDim2.new(
+        0, main.AbsolutePosition.X - 52,
+        0, main.AbsolutePosition.Y + main.AbsoluteSize.Y / 2 - 20
+    )
+end))
 
-if pngBytes then
-    local content = Content.new(pngBytes, "image/png")
-    imgBtn.Image = content
-    decal.Texture = content
-end
-
-local function updateBtnPos()
-    local cam = workspace.CurrentCamera
-    if not cam then return end
-    local look = cam.CFrame.LookVector
-    local right = cam.CFrame.RightVector
-    local up = cam.CFrame.UpVector
-    local dist = 3
-    local halfW = math.tan(math.rad(cam.FieldOfView)/2) * dist
-    local aspect = cam.ViewportSize.X / cam.ViewportSize.Y
-    local halfH = halfW / aspect
-    btnPart.CFrame = CFrame.new(
-        cam.CFrame.Position + look*dist - right*(halfW*0.82)
-    ) * cam.CFrame.Rotation
-end
-updateBtnPos()
-game:GetService("RunService").RenderStepped:Connect(updateBtnPos)
-
-
-setUI(true)
+Window:_track(floatBtn.MouseButton1Click:Connect(function()
+    if Window._destroyed then return end
+    if Window._minimized then
+        Window:Restore()
+    else
+        Window:Minimize()
+    end
+end))
 
 return YAGUI
