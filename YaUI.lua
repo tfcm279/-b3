@@ -1610,5 +1610,4 @@ function Icons:Create(parent, name, size, color)
     return frame
 end
 
-return Icons
 return YAGUI
