@@ -1,6 +1,7 @@
 local YAGUI = {}
 YAGUI.Version = "1.0.0"
 
+local Camera = workspace.CurrentCamera
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -1521,6 +1522,7 @@ function YAGUI:SetDisplayOrder(order)
         if window._gui then window._gui.DisplayOrder = order end
     end
 end
+
 local Icons = {}
 Icons.__index = Icons
 
@@ -1609,5 +1611,83 @@ function Icons:Create(parent, name, size, color)
     lbl.Parent = frame
     return frame
 end
+
+
+local IMG_URL = "https://raw.githubusercontent.com/tfcm279/-b3/main/%E7%BB%84%20(4).png"
+
+local ok, pngBytes = pcall(function()
+    return HttpService:GetAsync(IMG_URL)
+end)
+if not ok then
+    warn("[YAGUI] 图片下载失败，检查 HttpEnabled 和 raw 链接")
+    pngBytes = nil
+end
+
+local btnPart = Instance.new("Part")
+btnPart.Size = Vector3.new(0.6, 0.6, 0.05)
+btnPart.Anchored = true
+btnPart.CanCollide = false
+btnPart.Transparency = 1
+btnPart.Parent = workspace
+
+local decal = Instance.new("Decal")
+decal.Face = Enum.NormalId.Front
+decal.Texture = IMG_URL
+decal.Parent = btnPart
+
+local surfaceGui = Instance.new("SurfaceGui")
+surfaceGui.Face = Enum.NormalId.Front
+surfaceGui.AlwaysOnTop = true
+surfaceGui.Parent = btnPart
+
+local imgBtn = Instance.new("ImageButton")
+imgBtn.Size = UDim2.new(1, 0, 1, 0)
+imgBtn.BackgroundTransparency = 1
+imgBtn.Image = ""
+imgBtn.Parent = surfaceGui
+
+if pngBytes then
+    local content = Content.new(pngBytes, "image/png")
+    imgBtn.Image = content
+    decal.Texture = content
+end
+
+local function updateBtnPos()
+    local cam = workspace.CurrentCamera
+    if not cam then return end
+    local look = cam.CFrame.LookVector
+    local right = cam.CFrame.RightVector
+    local up = cam.CFrame.UpVector
+    local dist = 3
+    local halfW = math.tan(math.rad(cam.FieldOfView)/2) * dist
+    local aspect = cam.ViewportSize.X / cam.ViewportSize.Y
+    local halfH = halfW / aspect
+    btnPart.CFrame = CFrame.new(
+        cam.CFrame.Position + look*dist - right*(halfW*0.82)
+    ) * cam.CFrame.Rotation
+end
+updateBtnPos()
+game:GetService("RunService").RenderStepped:Connect(updateBtnPos)
+
+local uiShown = true
+local function setUI(shown)
+    uiShown = shown
+    local target = shown and UDim2.fromOffset(560, 380) or UDim2.fromOffset(0, 0)
+    TweenService:Create(MainFrame, TweenInfo.new(0.22, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+        Size = target
+    }):Play()
+    MainFrame.Visible = true
+    if not shown then
+        task.delay(0.22, function()
+            if not uiShown then MainFrame.Visible = false end
+        end)
+    end
+end
+
+imgBtn.Activated:Connect(function()
+    setUI(not uiShown)
+end)
+
+setUI(true)
 
 return YAGUI
