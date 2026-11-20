@@ -1668,24 +1668,6 @@ end
 updateBtnPos()
 game:GetService("RunService").RenderStepped:Connect(updateBtnPos)
 
-local uiShown = true
-local function setUI(shown)
-    uiShown = shown
-    local target = shown and UDim2.fromOffset(560, 380) or UDim2.fromOffset(0, 0)
-    TweenService:Create(MainFrame, TweenInfo.new(0.22, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-        Size = target
-    }):Play()
-    MainFrame.Visible = true
-    if not shown then
-        task.delay(0.22, function()
-            if not uiShown then MainFrame.Visible = false end
-        end)
-    end
-end
-
-imgBtn.Activated:Connect(function()
-    setUI(not uiShown)
-end)
 
 setUI(true)
 
