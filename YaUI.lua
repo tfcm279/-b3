@@ -1521,5 +1521,94 @@ function YAGUI:SetDisplayOrder(order)
         if window._gui then window._gui.DisplayOrder = order end
     end
 end
+local Icons = {}
+Icons.__index = Icons
 
+local LucideAtlas = {
+    AssetId = "rbxassetid://10734950040",
+    Size = 256,
+    Icons = {
+        ["home"] = Vector2.new(0, 0),
+        ["settings"] = Vector2.new(256, 0),
+        ["user"] = Vector2.new(512, 0),
+        ["search"] = Vector2.new(768, 0),
+        ["trash"] = Vector2.new(0, 256),
+        ["save"] = Vector2.new(256, 256),
+        ["edit"] = Vector2.new(512, 256),
+        ["close"] = Vector2.new(768, 256),
+        ["minimize"] = Vector2.new(0, 512),
+        ["maximize"] = Vector2.new(256, 512),
+        ["chevron-right"] = Vector2.new(512, 512),
+        ["check"] = Vector2.new(768, 512),
+        ["x"] = Vector2.new(0, 768),
+        ["minus"] = Vector2.new(256, 768),
+        ["square"] = Vector2.new(512, 768),
+    }
+}
+
+local CurrentType = "lucide"
+local OnlineLoaded = false
+
+function Icons:InitOnline()
+    if OnlineLoaded then return end
+    local success, res = pcall(function()
+        return loadstring(game:HttpGetAsync("https://raw.githubusercontent.com/Footagesus/Icons/main/Main-v2.lua"))()
+    end)
+    if success and res then
+        self.OnlineLib = res
+        self.OnlineLib.SetIconsType("lucide")
+        OnlineLoaded = true
+        print("[YAGUI] WindUI Online Icons Loaded.")
+    else
+        warn("[YAGUI] Failed to load online icons, using offline Lucide atlas.")
+    end
+end
+
+function Icons:SetType(typ)
+    CurrentType = typ
+    if self.OnlineLib then self.OnlineLib.SetIconsType(typ) end
+end
+
+function Icons:Get(name)
+    if OnlineLoaded and self.OnlineLib then
+        local img = self.OnlineLib.GetIcon(name)
+        if img then return { Image = img, ImageRectSize = Vector2.new(256,256), ImageRectOffset = Vector2.new(0,0) } end
+    end
+    
+    local key = name:gsub("lucide:", "")
+    local offset = LucideAtlas.Icons[key]
+    if offset then
+        return {
+            Image = LucideAtlas.AssetId,
+            ImageRectSize = Vector2.new(LucideAtlas.Size, LucideAtlas.Size),
+            ImageRectOffset = offset
+        }
+    end
+    return nil
+end
+
+function Icons:Create(parent, name, size, color)
+    local data = self:Get(name)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0, size or 18, 0, size or 18)
+    frame.BackgroundTransparency = 1
+    frame.Parent = parent
+    
+    local lbl = Instance.new("ImageLabel")
+    lbl.Size = UDim2.new(1,0,1,0)
+    lbl.BackgroundTransparency = 1
+    lbl.ImageColor3 = color or Color3.fromRGB(50, 255, 120)
+    lbl.ScaleType = Enum.ScaleType.Fit
+    if data then
+        lbl.Image = data.Image
+        lbl.ImageRectSize = data.ImageRectSize
+        lbl.ImageRectOffset = data.ImageRectOffset
+    else
+        lbl.Image = ""
+    end
+    lbl.Parent = frame
+    return frame
+end
+
+return Icons
 return YAGUI
