@@ -310,7 +310,6 @@ function YAGUI:CreateWindow(config)
         return btn
     end
 
-    local minBtn = makeBarButton("—", -112)
     local maxBtn = makeBarButton("□", -72)
     local closeBtn = makeBarButton("×", -32)
 
